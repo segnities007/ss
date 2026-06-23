@@ -1,6 +1,10 @@
 # coding: utf-8
 """
 PIR センサー検知 → メッセージ出力のテスト。
+
+参照:
+- IES7 Tips "Use of a Motion Sensor"
+- gpiozero.MotionSensor: https://gpiozero.readthedocs.io/en/stable/api_input.html#gpiozero.MotionSensor
 """
 
 import time
