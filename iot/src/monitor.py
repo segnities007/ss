@@ -6,9 +6,9 @@ PIR センサー、USB カメラ、YOLO、ブザーを連携させ、
 不審者・不審車両を検知した場合に server へ通知する。
 
 参照:
-- docs/plan.md Operation flow
-- docs/design/iot_design.md 4.9 monitor.py
 - IES7 Tips "Use of a Motion Sensor"
+- IES7 Tips "Multi-Threads" (複数処理を組み合わせる考え方)
+- Python datetime.now: https://docs.python.org/3/library/datetime.html#datetime.datetime.now
 """
 
 import time

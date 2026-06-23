@@ -3,8 +3,7 @@
 car の位置を追跡し、長時間同一場所に滞在している車両を判定するモジュール。
 
 参照:
-- docs/plan.md Functional spec.
-- docs/design/iot_design.md 4.7 car_tracker.py
+- IES2 "Programming with Python" (classes / lists / time module)
 - Python dataclasses: https://docs.python.org/3/library/dataclasses.html#dataclasses.dataclass
 - Python time.time: https://docs.python.org/3/library/time.html#time.time
 """

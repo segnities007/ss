@@ -5,8 +5,7 @@ person の連続検知を追跡するモジュール。
 一定時間以上 person が連続して検知された場合に「長時間滞在」と判定する。
 
 参照:
-- docs/plan.md Functional spec.
-- docs/design/iot_design.md 4.6 person_tracker.py
+- IES2 "Programming with Python" (time module / functions)
 - Python time.time: https://docs.python.org/3/library/time.html#time.time
 """
 
