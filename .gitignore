@@ -1,0 +1,5 @@
+
+/docs/*
+/docs/lectures/*.pdf
+__pycache__/
+*.pyc

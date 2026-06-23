@@ -1,0 +1,6 @@
+/.gradle
+/.kotlin
+/build
+h2.mv.db
+h2.trace.db
+uploads/

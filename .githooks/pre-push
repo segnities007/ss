@@ -1,0 +1,42 @@
+#!/bin/sh
+set -eu
+
+zero_sha=0000000000000000000000000000000000000000
+blocked=0
+
+while read -r local_ref local_sha remote_ref remote_sha
+do
+    # Branch/tag deletion does not send docs contents.
+    if [ "$local_sha" = "$zero_sha" ]; then
+        continue
+    fi
+
+    if [ "$remote_sha" = "$zero_sha" ]; then
+        changed_paths=$(
+            git log --format= --name-only "$local_sha" --not --remotes -- docs/ |
+            sed '/^$/d' |
+            sort -u
+        )
+    else
+        changed_paths=$(
+            git diff --name-only "$remote_sha" "$local_sha" -- docs/ |
+            sed '/^$/d' |
+            sort -u
+        )
+    fi
+
+    if [ -n "$changed_paths" ]; then
+        blocked=1
+        {
+            echo "error: push rejected because it includes changes under docs/."
+            echo "local ref:  $local_ref"
+            echo "remote ref: $remote_ref"
+            echo "blocked paths:"
+            echo "$changed_paths" | sed 's/^/  - /'
+            echo
+            echo "docs/ is local-only for this repository. Move the changes outside docs/ or remove them from the commits before pushing."
+        } >&2
+    fi
+done
+
+exit "$blocked"

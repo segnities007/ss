@@ -1,0 +1,9 @@
+ktor:
+  deployment:
+    port: 8080
+  application:
+    modules:
+      - com.segnities007.SerializationKt.configureSerialization
+      - com.segnities007.KoinKt.configureKoin
+      - com.segnities007.ExposedKt.configureExposed
+      - com.segnities007.RoutingKt.configureRouting
