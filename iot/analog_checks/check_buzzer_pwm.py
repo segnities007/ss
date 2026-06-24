@@ -14,11 +14,11 @@ from src.buzzer import PiezoBuzzer
 
 
 def main():
-    print("Buzzer check started.")
+    print("Buzzer check started. It will sound for 5 seconds.")
     buzzer = PiezoBuzzer()
     try:
-        buzzer.beep(on_time=0.3, off_time=0.3, count=5)
-        print("Buzzer should have beeped 5 times.")
+        buzzer.alert(duration_seconds=5.0)
+        print("Buzzer check completed.")
     finally:
         buzzer.close()
 

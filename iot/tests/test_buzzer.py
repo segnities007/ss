@@ -12,10 +12,10 @@ from src.buzzer import PiezoBuzzer
 
 
 def main():
-    print("Testing buzzer...")
+    print("Testing buzzer. It will sound for 5 seconds.")
     buzzer = PiezoBuzzer()
     try:
-        buzzer.beep(count=3)
+        buzzer.alert(duration_seconds=5.0)
         print("Buzzer test completed.")
     finally:
         buzzer.close()

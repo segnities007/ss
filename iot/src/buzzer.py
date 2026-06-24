@@ -19,7 +19,8 @@ class PiezoBuzzer:
     """圧電ブザーを制御するクラス。"""
 
     def __init__(self, pin: int = BUZZER_PIN):
-        self.buzzer = Buzzer(pin)
+        # OSOYOOの配線（ブザー＋を3.3V、－をGPIOへ接続）ではLOWで鳴る。
+        self.buzzer = Buzzer(pin, active_high=False)
 
     def beep(self, on_time: float = 0.5, off_time: float = 0.5, count: int = 3):
         """指定回数ビープ音を鳴らす。"""
