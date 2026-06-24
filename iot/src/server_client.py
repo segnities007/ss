@@ -15,7 +15,12 @@ from typing import Any, Dict, Optional
 
 import requests
 
-from src.config import SERVER_BASE_URL, SERVER_ENDPOINT
+from src.config import (
+    SERVER_BASE_URL,
+    SERVER_CONNECT_TIMEOUT_SECONDS,
+    SERVER_ENDPOINT,
+    SERVER_READ_TIMEOUT_SECONDS,
+)
 
 
 class ServerClient:
@@ -43,7 +48,15 @@ class ServerClient:
 
         with open(image_path, "rb") as image_file:
             files = {"image": image_file}
-            response = requests.post(self.url, data=data, files=files, timeout=30)
+            response = requests.post(
+                self.url,
+                data=data,
+                files=files,
+                timeout=(
+                    SERVER_CONNECT_TIMEOUT_SECONDS,
+                    SERVER_READ_TIMEOUT_SECONDS,
+                ),
+            )
             response.raise_for_status()
             return response.json()
 

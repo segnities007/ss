@@ -11,12 +11,10 @@ PIR → カメラ → YOLO → 判定 → ブザー → server 送信の一連�
 - IES6 "Deployment of an Object Detection Model"
 """
 
-import time
-
 from src.buzzer import PiezoBuzzer
 from src.camera import Camera
 from src.car_tracker import CarTracker
-from src.config import PERSON_DETECTION_THRESHOLD_SECONDS
+from src.monitor import build_metadata
 from src.pir_sensor import PIRSensor
 from src.person_tracker import PersonTracker
 from src.server_client import ServerClient
@@ -56,34 +54,46 @@ def main():
         persons = [d for d in detections if d.label == "person"]
         cars = [d for d in detections if d.label == "car"]
 
-        if persons and person_tracker.update(True):
+        person_tracker.update_pir(True, now=0.0)
+        person_result = person_tracker.update_detection(bool(persons), now=0.0)
+        if person_result.alert_triggered:
             print("  Long-staying person detected -> buzzer")
             buzzer.beep(count=1)
 
-        suspicious_cars = car_tracker.update(cars)
+        suspicious_cars = car_tracker.update(cars, now=0.0)
         if suspicious_cars:
-            print("  Suspicious vehicle detected -> buzzer")
-            buzzer.beep(count=1)
+            print("  Suspicious vehicle detected (no buzzer)")
 
         # 5. Server 送信
         print("[5/5] Sending to server...")
-        target = persons[0] if persons else (suspicious_cars[0] if suspicious_cars else None)
-        if target is not None:
+        sent_count = 0
+
+        if person_result.alert_triggered and persons:
+            target = max(persons, key=lambda detection: detection.confidence)
             result = client.send_detection(
-                detection_type="person" if target.label == "person" else "suspicious_vehicle",
+                detection_type="person",
                 confidence=target.confidence,
                 image_path=image_path,
-                metadata={
-                    "boundingBox": {
-                        "x": target.x,
-                        "y": target.y,
-                        "width": target.width,
-                        "height": target.height,
-                    }
-                },
+                metadata=build_metadata(
+                    target,
+                    person_result.duration_seconds,
+                ),
             )
-            print(f"  Server response: {result}")
-        else:
+            sent_count += 1
+            print(f"  Person response: {result}")
+
+        for alert in suspicious_cars:
+            target = alert.detection
+            result = client.send_detection(
+                detection_type="suspicious_vehicle",
+                confidence=target.confidence,
+                image_path=image_path,
+                metadata=build_metadata(target, alert.duration_seconds),
+            )
+            sent_count += 1
+            print(f"  Vehicle response: {result}")
+
+        if sent_count == 0:
             print("  No target detected, skipping server send.")
 
         print("=== Full flow test completed ===")
@@ -91,6 +101,7 @@ def main():
     except Exception as e:
         print(f"Error: {e}")
     finally:
+        buzzer.off()
         camera.release()
         buzzer.close()
         pir.close()

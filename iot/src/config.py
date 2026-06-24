@@ -27,12 +27,17 @@ YOLO_CLASSES = ["person", "car"]
 CONFIDENCE_THRESHOLD = 0.5
 
 # 判定閾値
-PERSON_DETECTION_THRESHOLD_SECONDS = 10.0
+PERSON_DETECTION_THRESHOLD_SECONDS = 60.0
+PERSON_LOST_GRACE_SECONDS = 4.0
+PIR_OBSERVATION_TIMEOUT_SECONDS = 5.0
+PERSON_CAPTURE_INTERVAL_SECONDS = 2.0
 SUSPICIOUS_VEHICLE_THRESHOLD_SECONDS = 300.0
 CAR_LOCATION_TOLERANCE = 50
+CAR_MISSING_CAPTURE_LIMIT = 2
 
-# 定期撮影間隔（秒）
-PERIODIC_CAPTURE_INTERVAL_SECONDS = 30
+# 監視間隔（秒）
+MONITOR_LOOP_INTERVAL_SECONDS = 1.0
+PERIODIC_CAPTURE_INTERVAL_SECONDS = 30.0
 
 # 監視プログラムの稼働状態を表示する間隔（秒）
 MONITOR_STATUS_INTERVAL_SECONDS = 5.0
@@ -42,6 +47,45 @@ MONITOR_STATUS_INTERVAL_SECONDS = 5.0
 # 参照: https://requests.readthedocs.io/en/latest/user/quickstart/#post-a-multipart-encoded-file
 SERVER_BASE_URL = "http://archlinux.tail1dcb8b.ts.net:8080"
 SERVER_ENDPOINT = "/api/detections"
+SERVER_CONNECT_TIMEOUT_SECONDS = 5.0
+SERVER_READ_TIMEOUT_SECONDS = 15.0
 
 # 画像保存先
 IMAGE_SAVE_DIR = "data"
+
+
+def validate_config():
+    """監視処理が成立しない設定値の組み合わせを起動前に検出する。"""
+    errors: list[str] = []
+    if MONITOR_LOOP_INTERVAL_SECONDS <= 0:
+        errors.append("MONITOR_LOOP_INTERVAL_SECONDS must be greater than 0")
+    if PERSON_CAPTURE_INTERVAL_SECONDS < MONITOR_LOOP_INTERVAL_SECONDS:
+        errors.append(
+            "PERSON_CAPTURE_INTERVAL_SECONDS must be greater than or equal to "
+            "MONITOR_LOOP_INTERVAL_SECONDS"
+        )
+    if PERSON_LOST_GRACE_SECONDS < PERSON_CAPTURE_INTERVAL_SECONDS * 2:
+        errors.append(
+            "PERSON_LOST_GRACE_SECONDS must be at least twice "
+            "PERSON_CAPTURE_INTERVAL_SECONDS"
+        )
+    if PERSON_DETECTION_THRESHOLD_SECONDS <= 0:
+        errors.append("PERSON_DETECTION_THRESHOLD_SECONDS must be greater than 0")
+    if PIR_OBSERVATION_TIMEOUT_SECONDS <= 0:
+        errors.append("PIR_OBSERVATION_TIMEOUT_SECONDS must be greater than 0")
+    if PERIODIC_CAPTURE_INTERVAL_SECONDS <= 0:
+        errors.append("PERIODIC_CAPTURE_INTERVAL_SECONDS must be greater than 0")
+    if SUSPICIOUS_VEHICLE_THRESHOLD_SECONDS <= PERIODIC_CAPTURE_INTERVAL_SECONDS:
+        errors.append(
+            "SUSPICIOUS_VEHICLE_THRESHOLD_SECONDS must be greater than "
+            "PERIODIC_CAPTURE_INTERVAL_SECONDS"
+        )
+    if CAR_LOCATION_TOLERANCE <= 0:
+        errors.append("CAR_LOCATION_TOLERANCE must be greater than 0")
+    if CAR_MISSING_CAPTURE_LIMIT < 1:
+        errors.append("CAR_MISSING_CAPTURE_LIMIT must be at least 1")
+    if not 0.0 <= CONFIDENCE_THRESHOLD <= 1.0:
+        errors.append("CONFIDENCE_THRESHOLD must be between 0.0 and 1.0")
+
+    if errors:
+        raise ValueError("Invalid IoT configuration:\n- " + "\n- ".join(errors))

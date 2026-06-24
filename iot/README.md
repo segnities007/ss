@@ -37,7 +37,9 @@ pip3 install gpiozero opencv-python ultralytics requests numpy
 
 ```python
 SERVER_BASE_URL = "http://192.168.1.100:8080"
-PERSON_DETECTION_THRESHOLD_SECONDS = 10.0
+PERSON_DETECTION_THRESHOLD_SECONDS = 60.0
+PERSON_CAPTURE_INTERVAL_SECONDS = 2.0
+PERSON_LOST_GRACE_SECONDS = 4.0
 SUSPICIOUS_VEHICLE_THRESHOLD_SECONDS = 300.0
 ```
 
@@ -75,6 +77,9 @@ python3 -m analog_checks.check_buzzer_pwm
 ## 統合テスト
 
 ```bash
+# 人物・車両の判定ロジック（ハードウェア不要）
+python3 -m unittest tests.test_tracking_logic -v
+
 # YOLO 静止画推論
 python3 -m tests.test_yolo_image
 
@@ -96,6 +101,10 @@ python3 -m src.monitor
 
 `Ctrl+C` で停止します。
 待機中も5秒ごとに`Monitoring active`が表示され、PIR状態と次の車両確認までの秒数を確認できます。
+
+- personは60秒以上連続して検知した場合、1イベントにつき1回だけブザーとServer通知を実行します。
+- YOLOがpersonを一時的に見失っても、4秒以内なら同じイベントとして継続します。
+- carは同じ場所に5分以上いる場合、1追跡につき1回だけServerへ通知します。carではブザーを鳴らしません。
 
 ## 講義資料との対応
 
