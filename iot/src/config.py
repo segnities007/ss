@@ -34,6 +34,9 @@ CAR_LOCATION_TOLERANCE = 50
 # 定期撮影間隔（秒）
 PERIODIC_CAPTURE_INTERVAL_SECONDS = 30
 
+# 監視プログラムの稼働状態を表示する間隔（秒）
+MONITOR_STATUS_INTERVAL_SECONDS = 5.0
+
 # Server 送信設定
 # HTTP クライアントには requests を使用（講義資料外）
 # 参照: https://requests.readthedocs.io/en/latest/user/quickstart/#post-a-multipart-encoded-file

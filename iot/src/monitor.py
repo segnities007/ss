@@ -9,6 +9,7 @@ PIR センサー、USB カメラ、YOLO、ブザーを連携させ、
 - IES7 Tips "Use of a Motion Sensor"
 - IES7 Tips "Multi-Threads" (複数処理を組み合わせる考え方)
 - Python datetime.now: https://docs.python.org/3/library/datetime.html#datetime.datetime.now
+- Python time.time: https://docs.python.org/3/library/time.html#time.time
 """
 
 import time
@@ -18,7 +19,7 @@ from typing import List
 from src.buzzer import PiezoBuzzer
 from src.camera import Camera
 from src.car_tracker import CarTracker
-from src.config import PERIODIC_CAPTURE_INTERVAL_SECONDS
+from src.config import MONITOR_STATUS_INTERVAL_SECONDS, PERIODIC_CAPTURE_INTERVAL_SECONDS
 from src.pir_sensor import PIRSensor
 from src.person_tracker import PersonTracker
 from src.server_client import ServerClient
@@ -51,14 +52,34 @@ def monitor():
     client = ServerClient()
 
     last_periodic_capture = 0.0
+    last_status_log = time.time()
+    previous_motion = False
 
-    print(f"[{_now()}] Monitoring started")
+    print(f"[{_now()}] Monitoring started", flush=True)
 
     try:
         while True:
             now = time.time()
             is_motion = pir.is_motion_detected()
             is_periodic = (now - last_periodic_capture) >= PERIODIC_CAPTURE_INTERVAL_SECONDS
+
+            if is_motion != previous_motion:
+                state = "detected" if is_motion else "cleared"
+                print(f"[{_now()}] PIR motion {state}", flush=True)
+                previous_motion = is_motion
+
+            if (now - last_status_log) >= MONITOR_STATUS_INTERVAL_SECONDS:
+                next_capture = max(
+                    0.0,
+                    PERIODIC_CAPTURE_INTERVAL_SECONDS - (now - last_periodic_capture),
+                )
+                pir_state = "motion" if is_motion else "no motion"
+                print(
+                    f"[{_now()}] Monitoring active | PIR: {pir_state} "
+                    f"| next vehicle check: {next_capture:.0f}s",
+                    flush=True,
+                )
+                last_status_log = now
 
             if is_motion:
                 _handle_motion(
@@ -71,6 +92,7 @@ def monitor():
 
             if is_periodic:
                 last_periodic_capture = now
+                print(f"[{_now()}] Periodic vehicle check started", flush=True)
                 _handle_periodic_capture(
                     camera=camera,
                     detector=detector,
@@ -81,7 +103,7 @@ def monitor():
             time.sleep(0.5)
 
     except KeyboardInterrupt:
-        print(f"[{_now()}] Monitoring stopped by user")
+        print(f"[{_now()}] Monitoring stopped by user", flush=True)
     finally:
         camera.release()
         buzzer.close()
@@ -132,6 +154,10 @@ def _handle_periodic_capture(
         detections = detector.detect(frame)
         cars = [d for d in detections if d.label == "car"]
         suspicious_cars = car_tracker.update(cars)
+        print(
+            f"[{_now()}] Periodic vehicle check completed | cars: {len(cars)}",
+            flush=True,
+        )
 
         for car in suspicious_cars:
             print(f"[{_now()}] Suspicious vehicle detected")

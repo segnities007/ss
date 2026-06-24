@@ -95,6 +95,7 @@ python3 -m src.monitor
 ```
 
 `Ctrl+C` で停止します。
+待機中も5秒ごとに`Monitoring active`が表示され、PIR状態と次の車両確認までの秒数を確認できます。
 
 ## 講義資料との対応
 
