@@ -41,6 +41,22 @@ PERSON_DETECTION_THRESHOLD_SECONDS = 10.0
 SUSPICIOUS_VEHICLE_THRESHOLD_SECONDS = 300.0
 ```
 
+## YOLOモデル
+
+Ultralytics公式のCOCO学習済み`yolov8n.pt`を使用します。COCOの80クラスには、本システムで使用する`person`と`car`が含まれます。
+
+モデルを再取得する場合:
+
+```bash
+curl -L \
+  https://github.com/ultralytics/assets/releases/download/v8.4.0/yolov8n.pt \
+  -o models/yolov8n.pt
+```
+
+- モデル仕様: https://docs.ultralytics.com/models/yolov8/
+- 公式配布元: https://github.com/ultralytics/assets/releases
+- ライセンス: https://www.ultralytics.com/license
+
 ## アナログ動作確認
 
 実際のハードウェアを接続した上で、各部品が単体で動作するか確認してください。

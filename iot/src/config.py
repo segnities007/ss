@@ -17,7 +17,12 @@ CAPTURE_RESOLUTION = (640, 480)
 
 # YOLO モデル設定
 # 参照: IES6 "Deployment of an Object Detection Model"
-YOLO_MODEL_PATH = "models/best.pt"
+# Ultralytics公式のCOCO学習済みYOLOv8 Nano物体検出モデルを使用する。
+# COCOには本システムで使用する person / car を含む80クラスがある。
+# モデル仕様: https://docs.ultralytics.com/models/yolov8/
+# 配布元: https://github.com/ultralytics/assets/releases/download/v8.4.0/yolov8n.pt
+# ライセンス: https://www.ultralytics.com/license
+YOLO_MODEL_PATH = "models/yolov8n.pt"
 YOLO_CLASSES = ["person", "car"]
 CONFIDENCE_THRESHOLD = 0.5
 

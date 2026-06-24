@@ -2,12 +2,12 @@
 """
 静止画に対する YOLO 推論テスト。
 
- models/best.pt と test.jpg を用意して実行する。
+ models/yolov8n.pt と test.jpg を用意して実行する。
 
 参照:
 - IES6 "Deployment of an Object Detection Model"
-- Ultralytics Python usage: https://docs.ultralytics.com/usage/python/#predict
-- Ultralytics predict results: https://docs.ultralytics.com/modes/predict#boxes
+- YOLOv8 model specification: https://docs.ultralytics.com/models/yolov8/
+- Ultralytics prediction API: https://docs.ultralytics.com/modes/predict/
 """
 
 from pathlib import Path

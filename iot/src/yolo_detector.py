@@ -4,9 +4,12 @@ YOLO による物体検知モジュール。
 
 参照:
 - IES6 "Deployment of an Object Detection Model"
-- Ultralytics Python usage: https://docs.ultralytics.com/usage/python/#predict
-- Ultralytics predict results: https://docs.ultralytics.com/modes/predict#boxes
+- YOLOv8 model specification: https://docs.ultralytics.com/models/yolov8/
+- Ultralytics prediction API: https://docs.ultralytics.com/modes/predict/
 - Ultralytics Boxes reference: https://docs.ultralytics.com/reference/engine/results/#ultralytics.engine.results.Boxes
+
+models/yolov8n.pt はUltralytics公式配布のCOCO学習済み物体検出モデル。
+COCOの80クラスから、config.pyで指定したpersonとcarだけを抽出する。
 """
 
 from dataclasses import dataclass
@@ -33,11 +36,16 @@ class YOLODetector:
 
     def __init__(self, model_path: str = YOLO_MODEL_PATH):
         # 遅延インポートにより、モデルファイルがなくてもモジュール読み込みは可能
+        # YOLOクラスの公式使用例:
+        # https://docs.ultralytics.com/models/yolov8/#yolov8-usage-examples
         from ultralytics import YOLO
         self.model = YOLO(model_path)
 
     def detect(self, frame: np.ndarray) -> List[DetectionResult]:
         """画像に対して推論を実行し、必要なクラスの検知結果を返す。"""
+        # 推論APIとResults/Boxesの仕様:
+        # https://docs.ultralytics.com/modes/predict/
+        # https://docs.ultralytics.com/reference/engine/results/#ultralytics.engine.results.Boxes
         results = self.model(frame, conf=CONFIDENCE_THRESHOLD, verbose=False)
         detections: List[DetectionResult] = []
 
