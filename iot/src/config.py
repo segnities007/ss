@@ -37,7 +37,7 @@ PERIODIC_CAPTURE_INTERVAL_SECONDS = 30
 # Server 送信設定
 # HTTP クライアントには requests を使用（講義資料外）
 # 参照: https://requests.readthedocs.io/en/latest/user/quickstart/#post-a-multipart-encoded-file
-SERVER_BASE_URL = "http://192.168.1.100:8080"
+SERVER_BASE_URL = "http://archlinux.tail1dcb8b.ts.net:8080"
 SERVER_ENDPOINT = "/api/detections"
 
 # 画像保存先
