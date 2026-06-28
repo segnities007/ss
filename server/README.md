@@ -10,6 +10,8 @@ Here are some useful links to get you started:
 
 ## Features
 
+Detection metadata is stored in a local SQLite database. Detection images are stored in the local `uploads/` directory.
+
 Here's a list of features included in this project:
 
 | Name                                                                                  | Description                                                                        |

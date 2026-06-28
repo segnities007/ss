@@ -1,6 +1,7 @@
 /.gradle
 /.kotlin
 /build
-h2.mv.db
-h2.trace.db
+detections.db
+detections.db-shm
+detections.db-wal
 uploads/
