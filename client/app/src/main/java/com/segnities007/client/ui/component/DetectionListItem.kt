@@ -7,8 +7,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,6 +28,7 @@ import com.segnities007.client.model.Detection
 fun DetectionListItem(
     detection: Detection,
     baseUrl: String,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val imageUrl = if (detection.imageUrl.startsWith("http")) {
@@ -34,6 +38,7 @@ fun DetectionListItem(
     }
 
     Card(
+        onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
@@ -57,7 +62,7 @@ fun DetectionListItem(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = labelForType(detection.type),
                     style = MaterialTheme.typography.titleMedium,
@@ -80,6 +85,11 @@ fun DetectionListItem(
                     )
                 }
             }
+
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = "詳細を表示",
+            )
         }
     }
 }

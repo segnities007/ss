@@ -1,7 +1,8 @@
 package com.segnities007.client.ui
 
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.History
@@ -13,11 +14,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.Modifier
+import com.segnities007.client.model.Detection
 import com.segnities007.client.ui.screen.DashboardScreen
+import com.segnities007.client.ui.screen.DetectionDetailScreen
 import com.segnities007.client.ui.screen.DetectionListScreen
 import com.segnities007.client.ui.viewmodel.DashboardViewModel
 import com.segnities007.client.ui.viewmodel.DetectionViewModel
@@ -34,36 +37,54 @@ fun ClientApp(
     baseUrl: String,
 ) {
     var destination by rememberSaveable { mutableStateOf(AppDestination.HISTORY) }
+    var selectedDetection by remember { mutableStateOf<Detection?>(null) }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
-            NavigationBar {
-                NavigationBarItem(
-                    selected = destination == AppDestination.HISTORY,
-                    onClick = { destination = AppDestination.HISTORY },
-                    icon = { Icon(Icons.Default.History, contentDescription = null) },
-                    label = { Text("履歴") },
-                )
-                NavigationBarItem(
-                    selected = destination == AppDestination.DASHBOARD,
-                    onClick = { destination = AppDestination.DASHBOARD },
-                    icon = { Icon(Icons.Default.Dashboard, contentDescription = null) },
-                    label = { Text("Dashboard") },
-                )
+            if (selectedDetection == null) {
+                NavigationBar {
+                    NavigationBarItem(
+                        selected = destination == AppDestination.HISTORY,
+                        onClick = { destination = AppDestination.HISTORY },
+                        icon = { Icon(Icons.Default.History, contentDescription = null) },
+                        label = { Text("履歴") },
+                    )
+                    NavigationBarItem(
+                        selected = destination == AppDestination.DASHBOARD,
+                        onClick = { destination = AppDestination.DASHBOARD },
+                        icon = { Icon(Icons.Default.Dashboard, contentDescription = null) },
+                        label = { Text("Dashboard") },
+                    )
+                }
             }
         },
     ) { innerPadding ->
-        when (destination) {
-            AppDestination.HISTORY -> DetectionListScreen(
-                viewModel = detectionViewModel,
+        val contentModifier = Modifier
+            .padding(innerPadding)
+            .consumeWindowInsets(innerPadding)
+        val detection = selectedDetection
+
+        if (detection != null) {
+            DetectionDetailScreen(
+                detection = detection,
                 baseUrl = baseUrl,
-                modifier = Modifier.padding(innerPadding),
+                onBack = { selectedDetection = null },
+                modifier = contentModifier,
             )
-            AppDestination.DASHBOARD -> DashboardScreen(
-                viewModel = dashboardViewModel,
-                modifier = Modifier.padding(innerPadding),
-            )
+        } else {
+            when (destination) {
+                AppDestination.HISTORY -> DetectionListScreen(
+                    viewModel = detectionViewModel,
+                    baseUrl = baseUrl,
+                    onDetectionClick = { selectedDetection = it },
+                    modifier = contentModifier,
+                )
+                AppDestination.DASHBOARD -> DashboardScreen(
+                    viewModel = dashboardViewModel,
+                    modifier = contentModifier,
+                )
+            }
         }
     }
 }

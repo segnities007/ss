@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.segnities007.client.model.Detection
 import com.segnities007.client.ui.component.DetectionListItem
 import com.segnities007.client.ui.viewmodel.DetectionViewModel
 
@@ -33,6 +34,7 @@ import com.segnities007.client.ui.viewmodel.DetectionViewModel
 fun DetectionListScreen(
     viewModel: DetectionViewModel,
     baseUrl: String,
+    onDetectionClick: (Detection) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val detections by viewModel.detections.collectAsStateWithLifecycle()
@@ -83,6 +85,7 @@ fun DetectionListScreen(
                         DetectionListItem(
                             detection = detection,
                             baseUrl = baseUrl,
+                            onClick = { onDetectionClick(detection) },
                         )
                     }
                 }
