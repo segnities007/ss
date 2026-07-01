@@ -105,8 +105,10 @@ python3 -m src.monitor
 監視プログラムは3秒間隔でPC Serverへheartbeatを送ります。Mobile ApplicationのDashboardでは、監視全体に加えてbuzzer、USB camera、PIR motion sensorを個別に有効・無効にできます。camera無効時は人物・車両判定を停止し、PIR無効時は人物監視だけを停止します。buzzer無効時も人物検知履歴の送信は継続します。制御用通信は別threadで行うため、Server応答待ちによって監視ループを停止しません。
 
 - personは60秒以上連続して検知した場合、1イベントにつき1回だけブザーとServer通知を実行します。
+- 複数のpersonには個別のtrack IDを割り当て、人物ごとに滞在時間と通知済み状態を管理します。
 - YOLOがpersonを一時的に見失っても、4秒以内なら同じイベントとして継続します。
-- carは同じ場所に5分以上いる場合、1追跡につき1回だけServerへ通知します。carではブザーを鳴らしません。
+- carも個別のtrack IDで管理し、同じ場所に5分以上いる場合、1追跡につき1回だけServerへ通知します。carではブザーを鳴らしません。
+- track IDは画像内の位置による一時的な追跡IDであり、顔認証、人物Re-ID、ナンバープレート認識ではありません。
 
 ## 講義資料との対応
 

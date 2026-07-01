@@ -37,6 +37,7 @@ from src.yolo_detector import YOLODetector
 def build_metadata(
     result: DetectionResult,
     duration_seconds: float | None = None,
+    track_id: int | None = None,
 ) -> dict:
     """検知結果からServer送信用メタデータを作成する。"""
     metadata = {
@@ -49,6 +50,8 @@ def build_metadata(
     }
     if duration_seconds is not None:
         metadata["durationSeconds"] = int(duration_seconds)
+    if track_id is not None:
+        metadata["trackId"] = track_id
     return metadata
 
 
@@ -303,10 +306,9 @@ def _capture_and_process(
 
     if process_person:
         persons = [detection for detection in detections if detection.label == "person"]
-        result = person_tracker.update_detection(bool(persons), now)
+        result = person_tracker.update_detection(persons, now)
         _handle_person_result(
             result=result,
-            persons=persons,
             frame=frame,
             camera=camera,
             buzzer=buzzer,
@@ -329,33 +331,29 @@ def _capture_and_process(
 
 def _handle_person_result(
     result: PersonTrackingResult,
-    persons: list[DetectionResult],
     frame,
     camera: Camera,
     buzzer: PiezoBuzzer,
     client: ServerClient,
     buzzer_enabled: bool,
 ):
-    if result.first_detected:
-        print(f"[{_now()}] Person detected; continuous timer started", flush=True)
-
-    if result.event_ended:
+    for track_id in result.new_track_ids:
         print(
-            f"[{_now()}] Person event ended "
-            f"| duration: {result.duration_seconds:.1f}s",
+            f"[{_now()}] Person detected "
+            f"| track: {track_id} "
+            "| continuous timer started",
             flush=True,
         )
+
+    for track_id in result.ended_track_ids:
+        print(f"[{_now()}] Person track ended | track: {track_id}", flush=True)
+
+    if result.event_ended:
+        print(f"[{_now()}] Person event ended", flush=True)
         return
 
-    if not result.alert_triggered or not persons:
+    if not result.alerts:
         return
-
-    target = max(persons, key=lambda detection: detection.confidence)
-    print(
-        f"[{_now()}] Long-staying person detected "
-        f"| duration: {result.duration_seconds:.1f}s",
-        flush=True,
-    )
 
     if buzzer_enabled:
         try:
@@ -366,15 +364,23 @@ def _handle_person_result(
     else:
         print(f"[{_now()}] Person alert buzzer is disabled", flush=True)
 
-    _save_and_send(
-        frame=frame,
-        filename=f"person_{_timestamp()}.jpg",
-        detection_type="person",
-        target=target,
-        duration_seconds=result.duration_seconds,
-        camera=camera,
-        client=client,
-    )
+    for alert in result.alerts:
+        print(
+            f"[{_now()}] Long-staying person detected "
+            f"| track: {alert.track_id} "
+            f"| duration: {alert.duration_seconds:.1f}s",
+            flush=True,
+        )
+        _save_and_send(
+            frame=frame,
+            filename=f"person_{alert.track_id}_{_timestamp()}.jpg",
+            detection_type="person",
+            target=alert.detection,
+            duration_seconds=alert.duration_seconds,
+            track_id=alert.track_id,
+            camera=camera,
+            client=client,
+        )
 
 
 def _notify_vehicle(
@@ -396,6 +402,7 @@ def _notify_vehicle(
         detection_type="suspicious_vehicle",
         target=alert.detection,
         duration_seconds=alert.duration_seconds,
+        track_id=alert.track_id,
         camera=camera,
         client=client,
     )
@@ -407,6 +414,7 @@ def _save_and_send(
     detection_type: str,
     target: DetectionResult,
     duration_seconds: float,
+    track_id: int,
     camera: Camera,
     client: ServerClient,
 ):
@@ -421,7 +429,7 @@ def _save_and_send(
             detection_type=detection_type,
             confidence=target.confidence,
             image_path=image_path,
-            metadata=build_metadata(target, duration_seconds),
+            metadata=build_metadata(target, duration_seconds, track_id),
         )
         detection_id = response.get("id", "unknown")
         print(

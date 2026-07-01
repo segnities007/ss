@@ -18,6 +18,7 @@ data class DetectionMetadata(
     val boundingBox: BoundingBox? = null,
     val durationSeconds: Int? = null,
     val location: BoundingBox? = null,
+    val trackId: Int? = null,
 )
 
 @Serializable

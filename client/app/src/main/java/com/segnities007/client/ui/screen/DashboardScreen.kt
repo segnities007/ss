@@ -14,7 +14,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -33,13 +32,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.segnities007.client.model.IoTControlStatus
+import com.segnities007.client.model.IoTDeviceSettings
+import com.segnities007.client.ui.component.DeviceSettingRow
+import com.segnities007.client.ui.component.StatusCard
 import com.segnities007.client.ui.viewmodel.DashboardViewModel
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -206,95 +206,27 @@ private fun DashboardContent(
     }
 }
 
+@Preview(showBackground = true)
 @Composable
-private fun DeviceSettingRow(
-    title: String,
-    checked: Boolean,
-    enabled: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
-            )
-        }
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-            enabled = enabled,
+private fun DashboardContentPreview() {
+    MaterialTheme {
+        DashboardContent(
+            status = IoTControlStatus(
+                deviceOnline = true,
+                monitoringEnabled = true,
+                monitoringActive = false,
+                settings = IoTDeviceSettings(
+                    buzzerEnabled = true,
+                    cameraEnabled = true,
+                    pirSensorEnabled = false,
+                ),
+            ),
+            isUpdating = false,
+            onMonitoringChanged = {},
+            onBuzzerChanged = {},
+            onCameraChanged = {},
+            onPirSensorChanged = {},
+            modifier = Modifier.fillMaxSize(),
         )
     }
 }
-
-@Composable
-private fun StatusCard(status: IoTControlStatus) {
-    val containerColor = if (status.deviceOnline) {
-        MaterialTheme.colorScheme.primaryContainer
-    } else {
-        MaterialTheme.colorScheme.errorContainer
-    }
-    val contentColor = if (status.deviceOnline) {
-        MaterialTheme.colorScheme.onPrimaryContainer
-    } else {
-        MaterialTheme.colorScheme.onErrorContainer
-    }
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = containerColor,
-            contentColor = contentColor,
-        ),
-    ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            Text(
-                text = "Raspberry Pi",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Spacer(Modifier.height(12.dp))
-            StatusRow("接続", if (status.deviceOnline) "オンライン" else "オフライン")
-            StatusRow(
-                "監視状態",
-                when {
-                    !status.deviceOnline -> "確認できません"
-                    status.monitoringActive -> "監視中"
-                    else -> "停止中"
-                },
-            )
-            StatusRow("最終通信", formatLastSeen(status.lastSeenAt))
-        }
-    }
-}
-
-@Composable
-private fun StatusRow(label: String, value: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text(label, style = MaterialTheme.typography.bodyMedium)
-        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-    }
-}
-
-private fun formatLastSeen(value: String?): String {
-    if (value == null) return "未接続"
-    return runCatching {
-        LAST_SEEN_FORMATTER.format(Instant.parse(value).atZone(ZoneId.systemDefault()))
-    }.getOrDefault(value)
-}
-
-private val LAST_SEEN_FORMATTER: DateTimeFormatter =
-    DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")

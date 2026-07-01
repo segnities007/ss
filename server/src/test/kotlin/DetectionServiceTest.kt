@@ -32,6 +32,7 @@ class DetectionServiceTest {
                 metadata = DetectionMetadata(
                     boundingBox = BoundingBox(10, 20, 30, 40),
                     durationSeconds = 60,
+                    trackId = 7,
                 ),
             )
 

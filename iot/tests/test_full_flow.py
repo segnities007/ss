@@ -55,8 +55,8 @@ def main():
         cars = [d for d in detections if d.label == "car"]
 
         person_tracker.update_pir(True, now=0.0)
-        person_result = person_tracker.update_detection(bool(persons), now=0.0)
-        if person_result.alert_triggered:
+        person_result = person_tracker.update_detection(persons, now=0.0)
+        if person_result.alerts:
             print("  Long-staying person detected -> buzzer")
             buzzer.beep(count=1)
 
@@ -68,15 +68,16 @@ def main():
         print("[5/5] Sending to server...")
         sent_count = 0
 
-        if person_result.alert_triggered and persons:
-            target = max(persons, key=lambda detection: detection.confidence)
+        for alert in person_result.alerts:
+            target = alert.detection
             result = client.send_detection(
                 detection_type="person",
                 confidence=target.confidence,
                 image_path=image_path,
                 metadata=build_metadata(
                     target,
-                    person_result.duration_seconds,
+                    alert.duration_seconds,
+                    alert.track_id,
                 ),
             )
             sent_count += 1
@@ -88,7 +89,11 @@ def main():
                 detection_type="suspicious_vehicle",
                 confidence=target.confidence,
                 image_path=image_path,
-                metadata=build_metadata(target, alert.duration_seconds),
+                metadata=build_metadata(
+                    target,
+                    alert.duration_seconds,
+                    alert.track_id,
+                ),
             )
             sent_count += 1
             print(f"  Vehicle response: {result}")

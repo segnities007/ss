@@ -1,6 +1,7 @@
 package com.segnities007.client.ui
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.History
@@ -14,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.Modifier
 import com.segnities007.client.ui.screen.DashboardScreen
 import com.segnities007.client.ui.screen.DetectionListScreen
@@ -34,6 +36,7 @@ fun ClientApp(
     var destination by rememberSaveable { mutableStateOf(AppDestination.HISTORY) }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             NavigationBar {
                 NavigationBarItem(

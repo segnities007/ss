@@ -72,6 +72,13 @@ fun DetectionListItem(
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
+                detection.metadata?.trackId?.let { trackId ->
+                    val prefix = if (detection.type == "person") "P" else "V"
+                    Text(
+                        text = "Tracking ID: $prefix-$trackId",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
             }
         }
     }

@@ -27,6 +27,17 @@ def car(x: int, y: int = 0) -> DetectionResult:
     )
 
 
+def person(x: int, y: int = 0) -> DetectionResult:
+    return DetectionResult(
+        label="person",
+        confidence=0.9,
+        x=x,
+        y=y,
+        width=40,
+        height=100,
+    )
+
+
 class PersonTrackerTest(unittest.TestCase):
     def setUp(self):
         self.tracker = PersonTracker(
@@ -38,23 +49,26 @@ class PersonTrackerTest(unittest.TestCase):
 
     def test_alerts_once_at_threshold(self):
         self.assertTrue(self.tracker.update_pir(True, now=0.0))
-        first = self.tracker.update_detection(True, now=0.0)
-        before = self.tracker.update_detection(True, now=59.9)
-        at_threshold = self.tracker.update_detection(True, now=60.0)
-        after = self.tracker.update_detection(True, now=70.0)
+        first = self.tracker.update_detection([person(0)], now=0.0)
+        for second in range(4, 60, 4):
+            self.tracker.update_detection([person(5)], now=float(second))
+        before = self.tracker.update_detection([person(5)], now=59.9)
+        at_threshold = self.tracker.update_detection([person(10)], now=60.0)
+        after = self.tracker.update_detection([person(15)], now=70.0)
 
-        self.assertTrue(first.first_detected)
-        self.assertFalse(before.alert_triggered)
-        self.assertTrue(at_threshold.alert_triggered)
-        self.assertFalse(after.alert_triggered)
+        self.assertEqual(first.new_track_ids, (1,))
+        self.assertEqual(before.alerts, ())
+        self.assertEqual(len(at_threshold.alerts), 1)
+        self.assertEqual(at_threshold.alerts[0].track_id, 1)
+        self.assertEqual(after.alerts, ())
         self.assertEqual(self.tracker.state, PersonState.ALERTED)
 
     def test_one_missed_capture_is_tolerated(self):
         self.tracker.update_pir(True, now=0.0)
-        self.tracker.update_detection(True, now=0.0)
+        self.tracker.update_detection([person(0)], now=0.0)
 
-        within_grace = self.tracker.update_detection(False, now=4.0)
-        beyond_grace = self.tracker.update_detection(False, now=4.1)
+        within_grace = self.tracker.update_detection([], now=4.0)
+        beyond_grace = self.tracker.update_detection([], now=4.1)
 
         self.assertFalse(within_grace.event_ended)
         self.assertTrue(beyond_grace.event_ended)
@@ -62,8 +76,8 @@ class PersonTrackerTest(unittest.TestCase):
 
     def test_new_event_requires_pir_clear(self):
         self.tracker.update_pir(True, now=0.0)
-        self.tracker.update_detection(True, now=0.0)
-        self.tracker.update_detection(False, now=4.1)
+        self.tracker.update_detection([person(0)], now=0.0)
+        self.tracker.update_detection([], now=4.1)
 
         self.assertFalse(self.tracker.update_pir(True, now=5.0))
         self.tracker.update_pir(False, now=6.0)
@@ -72,16 +86,18 @@ class PersonTrackerTest(unittest.TestCase):
 
     def test_observation_continues_after_pir_clears(self):
         self.tracker.update_pir(True, now=0.0)
-        self.tracker.update_detection(True, now=0.0)
+        self.tracker.update_detection([person(0)], now=0.0)
         self.tracker.update_pir(False, now=1.0)
-        result = self.tracker.update_detection(True, now=60.0)
+        for second in range(4, 60, 4):
+            self.tracker.update_detection([person(0)], now=float(second))
+        result = self.tracker.update_detection([person(0)], now=60.0)
 
-        self.assertTrue(result.alert_triggered)
+        self.assertEqual(len(result.alerts), 1)
         self.assertEqual(self.tracker.state, PersonState.ALERTED)
 
     def test_observation_ends_when_no_person_is_found(self):
         self.tracker.update_pir(True, now=0.0)
-        result = self.tracker.update_detection(False, now=5.0)
+        result = self.tracker.update_detection([], now=5.0)
 
         self.assertTrue(result.event_ended)
         self.assertEqual(self.tracker.state, PersonState.WAIT_PIR_CLEAR)
@@ -92,6 +108,48 @@ class PersonTrackerTest(unittest.TestCase):
         self.tracker.mark_capture_attempt(now=0.0)
         self.assertFalse(self.tracker.capture_due(now=1.9))
         self.assertTrue(self.tracker.capture_due(now=2.0))
+
+    def test_multiple_people_get_independent_track_ids_and_alerts(self):
+        self.tracker.update_pir(True, now=0.0)
+        first = self.tracker.update_detection(
+            [person(0), person(300)],
+            now=0.0,
+        )
+        for second in range(4, 60, 4):
+            self.tracker.update_detection(
+                [person(10), person(290)],
+                now=float(second),
+            )
+        alerts = self.tracker.update_detection(
+            [person(10), person(290)],
+            now=60.0,
+        )
+
+        self.assertEqual(first.new_track_ids, (1, 2))
+        self.assertEqual(
+            {alert.track_id for alert in alerts.alerts},
+            {1, 2},
+        )
+
+    def test_nearby_detection_keeps_same_track_id(self):
+        self.tracker.update_pir(True, now=0.0)
+        self.tracker.update_detection([person(0)], now=0.0)
+        update = self.tracker.update_detection([person(50)], now=2.0)
+
+        self.assertEqual(update.new_track_ids, ())
+        self.assertEqual(self.tracker.tracked_count, 1)
+        self.assertEqual(self.tracker.tracked_persons[0].track_id, 1)
+
+    def test_distant_person_gets_new_track_id_during_same_event(self):
+        self.tracker.update_pir(True, now=0.0)
+        self.tracker.update_detection([person(0)], now=0.0)
+        update = self.tracker.update_detection([person(300)], now=2.0)
+
+        self.assertEqual(update.new_track_ids, (2,))
+        self.assertEqual(
+            {track.track_id for track in self.tracker.tracked_persons},
+            {1, 2},
+        )
 
 
 class CarTrackerTest(unittest.TestCase):

@@ -118,9 +118,8 @@ class CarTracker:
         return len(self.tracked_cars)
 
     def reset(self):
-        """追跡状態をリセットする。"""
+        """追跡状態をリセットする。track IDはプロセス内で再利用しない。"""
         self.tracked_cars = []
-        self.next_track_id = 1
 
     def _assign_detections(
         self,
