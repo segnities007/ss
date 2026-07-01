@@ -102,6 +102,8 @@ python3 -m src.monitor
 `Ctrl+C` で停止します。
 待機中も5秒ごとに`Monitoring active`が表示され、PIR状態と次の車両確認までの秒数を確認できます。
 
+監視プログラムは3秒間隔でPC Serverへheartbeatを送ります。Mobile ApplicationのDashboardでは、監視全体に加えてbuzzer、USB camera、PIR motion sensorを個別に有効・無効にできます。camera無効時は人物・車両判定を停止し、PIR無効時は人物監視だけを停止します。buzzer無効時も人物検知履歴の送信は継続します。制御用通信は別threadで行うため、Server応答待ちによって監視ループを停止しません。
+
 - personは60秒以上連続して検知した場合、1イベントにつき1回だけブザーとServer通知を実行します。
 - YOLOがpersonを一時的に見失っても、4秒以内なら同じイベントとして継続します。
 - carは同じ場所に5分以上いる場合、1追跡につき1回だけServerへ通知します。carではブザーを鳴らしません。
@@ -122,6 +124,7 @@ python3 -m src.monitor
 ## 講義資料外の参照
 
 - `requests` multipart upload: https://requests.readthedocs.io/en/latest/user/quickstart/#post-a-multipart-encoded-file
+- `requests` JSON request: https://requests.readthedocs.io/en/latest/user/quickstart/#more-complicated-post-requests
 - `requests` timeout: https://requests.readthedocs.io/en/latest/user/quickstart/#timeouts
 - `pathlib.Path.mkdir` (パス操作): https://docs.python.org/3/library/pathlib.html#pathlib.Path.mkdir
 - `datetime.datetime.now` (日時処理): https://docs.python.org/3/library/datetime.html#datetime.datetime.now

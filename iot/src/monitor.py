@@ -4,9 +4,11 @@ PIR、USBカメラ、YOLO、ブザー、Server送信を統合する監視ルー�
 
 人物監視と車両監視が同時刻の場合は、1回の撮影・YOLO推論結果を共有する。
 人物イベントではブザーとServer送信を1回だけ行い、車両ではブザーを鳴らさない。
+Mobile Applicationからの監視制御は別threadでServerと同期する。
 
 参照:
 - IES7 Tips "Use of a Motion Sensor"
+- IES7 Tips "Threading"
 - Python datetime.now: https://docs.python.org/3/library/datetime.html#datetime.datetime.now
 - Python time.monotonic: https://docs.python.org/3/library/time.html#time.monotonic
 """
@@ -24,9 +26,11 @@ from src.config import (
     validate_config,
 )
 from src.detection import DetectionResult
+from src.iot_control import IoTControlPoller
 from src.person_tracker import PersonTracker, PersonTrackingResult
 from src.pir_sensor import PIRSensor
 from src.server_client import ServerClient
+from src.server_client import IoTControlCommand
 from src.yolo_detector import YOLODetector
 
 
@@ -54,6 +58,7 @@ def monitor():
     pir: PIRSensor | None = None
     camera: Camera | None = None
     buzzer: PiezoBuzzer | None = None
+    control_poller: IoTControlPoller | None = None
 
     try:
         pir = PIRSensor()
@@ -68,6 +73,8 @@ def monitor():
         last_periodic_capture = started_at - PERIODIC_CAPTURE_INTERVAL_SECONDS
         last_status_log = started_at
         previous_motion: bool | None = None
+        current_command = IoTControlCommand()
+        last_control_error: str | None = None
 
         print(f"[{_now()}] Monitoring started | server: {client.url}", flush=True)
         if client.health_check():
@@ -79,26 +86,133 @@ def monitor():
                 flush=True,
             )
 
+        control_poller = IoTControlPoller(client)
+        control_poller.start()
+
         while True:
             now = time.monotonic()
-            try:
-                is_motion = pir.is_motion_detected()
-            except Exception as error:
-                print(f"[{_now()}] PIR read error: {error}", flush=True)
+
+            requested_command = control_poller.command
+            if requested_command != current_command:
+                previous_command = current_command
+                current_command = requested_command
+
+                if (
+                    previous_command.monitoring_enabled
+                    != current_command.monitoring_enabled
+                ):
+                    person_tracker.reset()
+                    car_tracker.reset()
+                    previous_motion = None
+                    buzzer.off()
+                    if current_command.monitoring_enabled:
+                        last_periodic_capture = (
+                            now - PERIODIC_CAPTURE_INTERVAL_SECONDS
+                        )
+                    state = (
+                        "started"
+                        if current_command.monitoring_enabled
+                        else "stopped"
+                    )
+                    print(
+                        f"[{_now()}] Monitoring {state} by Mobile Application",
+                        flush=True,
+                    )
+
+                old_settings = previous_command.settings
+                new_settings = current_command.settings
+                if old_settings.camera_enabled != new_settings.camera_enabled:
+                    person_tracker.reset()
+                    car_tracker.reset()
+                    previous_motion = None
+                    buzzer.off()
+                    if new_settings.camera_enabled:
+                        last_periodic_capture = (
+                            now - PERIODIC_CAPTURE_INTERVAL_SECONDS
+                        )
+                    print(
+                        f"[{_now()}] Camera "
+                        f"{'enabled' if new_settings.camera_enabled else 'disabled'} "
+                        "by Mobile Application",
+                        flush=True,
+                    )
+                if (
+                    old_settings.pir_sensor_enabled
+                    != new_settings.pir_sensor_enabled
+                ):
+                    person_tracker.reset()
+                    previous_motion = None
+                    print(
+                        f"[{_now()}] PIR sensor "
+                        f"{'enabled' if new_settings.pir_sensor_enabled else 'disabled'} "
+                        "by Mobile Application",
+                        flush=True,
+                    )
+                if old_settings.buzzer_enabled != new_settings.buzzer_enabled:
+                    if not new_settings.buzzer_enabled:
+                        buzzer.off()
+                    print(
+                        f"[{_now()}] Buzzer "
+                        f"{'enabled' if new_settings.buzzer_enabled else 'disabled'} "
+                        "by Mobile Application",
+                        flush=True,
+                    )
+
+                control_poller.set_monitoring_active(
+                    current_command.monitoring_enabled
+                )
+
+            control_error = control_poller.last_error
+            if control_error != last_control_error:
+                if control_error is not None:
+                    print(
+                        f"[{_now()}] IoT control sync failed: {control_error} "
+                        "| current state will continue",
+                        flush=True,
+                    )
+                elif last_control_error is not None:
+                    print(f"[{_now()}] IoT control sync recovered", flush=True)
+                last_control_error = control_error
+
+            if not current_command.monitoring_enabled:
+                if now - last_status_log >= MONITOR_STATUS_INTERVAL_SECONDS:
+                    print(
+                        f"[{_now()}] Monitoring stopped "
+                        "| waiting for Mobile Application control",
+                        flush=True,
+                    )
+                    last_status_log = now
                 time.sleep(MONITOR_LOOP_INTERVAL_SECONDS)
                 continue
 
-            if is_motion != previous_motion:
+            person_path_enabled = (
+                current_command.settings.camera_enabled
+                and current_command.settings.pir_sensor_enabled
+            )
+            is_motion = False
+            if person_path_enabled:
+                try:
+                    is_motion = pir.is_motion_detected()
+                except Exception as error:
+                    print(f"[{_now()}] PIR read error: {error}", flush=True)
+                    time.sleep(MONITOR_LOOP_INTERVAL_SECONDS)
+                    continue
+
+            if person_path_enabled and is_motion != previous_motion:
                 state = "detected" if is_motion else "cleared"
                 print(f"[{_now()}] PIR motion {state}", flush=True)
                 previous_motion = is_motion
 
-            if person_tracker.update_pir(is_motion, now):
+            if person_path_enabled and person_tracker.update_pir(is_motion, now):
                 print(f"[{_now()}] Person observation started", flush=True)
 
-            person_capture_due = person_tracker.capture_due(now)
+            person_capture_due = (
+                person_path_enabled and person_tracker.capture_due(now)
+            )
             vehicle_capture_due = (
-                now - last_periodic_capture >= PERIODIC_CAPTURE_INTERVAL_SECONDS
+                current_command.settings.camera_enabled
+                and now - last_periodic_capture
+                >= PERIODIC_CAPTURE_INTERVAL_SECONDS
             )
 
             if person_capture_due:
@@ -115,6 +229,7 @@ def monitor():
                     car_tracker=car_tracker,
                     buzzer=buzzer,
                     client=client,
+                    buzzer_enabled=current_command.settings.buzzer_enabled,
                     process_person=person_capture_due,
                     process_vehicle=vehicle_capture_due,
                     now=now,
@@ -142,6 +257,8 @@ def monitor():
     except KeyboardInterrupt:
         print(f"[{_now()}] Monitoring stopped by user", flush=True)
     finally:
+        if control_poller is not None:
+            control_poller.stop()
         if buzzer is not None:
             try:
                 buzzer.off()
@@ -170,6 +287,7 @@ def _capture_and_process(
     car_tracker: CarTracker,
     buzzer: PiezoBuzzer,
     client: ServerClient,
+    buzzer_enabled: bool,
     process_person: bool,
     process_vehicle: bool,
     now: float,
@@ -193,6 +311,7 @@ def _capture_and_process(
             camera=camera,
             buzzer=buzzer,
             client=client,
+            buzzer_enabled=buzzer_enabled,
         )
 
     if process_vehicle:
@@ -215,6 +334,7 @@ def _handle_person_result(
     camera: Camera,
     buzzer: PiezoBuzzer,
     client: ServerClient,
+    buzzer_enabled: bool,
 ):
     if result.first_detected:
         print(f"[{_now()}] Person detected; continuous timer started", flush=True)
@@ -237,11 +357,14 @@ def _handle_person_result(
         flush=True,
     )
 
-    try:
-        buzzer.beep()
-        print(f"[{_now()}] Person alert buzzer started", flush=True)
-    except Exception as error:
-        print(f"[{_now()}] Buzzer error: {error}", flush=True)
+    if buzzer_enabled:
+        try:
+            buzzer.beep()
+            print(f"[{_now()}] Person alert buzzer started", flush=True)
+        except Exception as error:
+            print(f"[{_now()}] Buzzer error: {error}", flush=True)
+    else:
+        print(f"[{_now()}] Person alert buzzer is disabled", flush=True)
 
     _save_and_send(
         frame=frame,

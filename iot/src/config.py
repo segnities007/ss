@@ -47,6 +47,8 @@ MONITOR_STATUS_INTERVAL_SECONDS = 5.0
 # 参照: https://requests.readthedocs.io/en/latest/user/quickstart/#post-a-multipart-encoded-file
 SERVER_BASE_URL = "http://archlinux.tail1dcb8b.ts.net:8080"
 SERVER_ENDPOINT = "/api/detections"
+IOT_HEARTBEAT_ENDPOINT = "/api/iot/heartbeat"
+IOT_CONTROL_SYNC_INTERVAL_SECONDS = 3.0
 SERVER_CONNECT_TIMEOUT_SECONDS = 5.0
 SERVER_READ_TIMEOUT_SECONDS = 15.0
 
@@ -86,6 +88,8 @@ def validate_config():
         errors.append("CAR_MISSING_CAPTURE_LIMIT must be at least 1")
     if not 0.0 <= CONFIDENCE_THRESHOLD <= 1.0:
         errors.append("CONFIDENCE_THRESHOLD must be between 0.0 and 1.0")
+    if IOT_CONTROL_SYNC_INTERVAL_SECONDS <= 0:
+        errors.append("IOT_CONTROL_SYNC_INTERVAL_SECONDS must be greater than 0")
 
     if errors:
         raise ValueError("Invalid IoT configuration:\n- " + "\n- ".join(errors))

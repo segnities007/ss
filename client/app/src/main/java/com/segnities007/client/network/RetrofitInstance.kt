@@ -15,12 +15,19 @@ object RetrofitInstance {
     private val client = OkHttpClient.Builder()
         .build()
 
-    val api: DetectionApiService by lazy {
+    private val retrofit: Retrofit by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
             .client(client)
             .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .build()
-            .create(DetectionApiService::class.java)
+    }
+
+    val api: DetectionApiService by lazy {
+        retrofit.create(DetectionApiService::class.java)
+    }
+
+    val iotControlApi: IoTControlApiService by lazy {
+        retrofit.create(IoTControlApiService::class.java)
     }
 }

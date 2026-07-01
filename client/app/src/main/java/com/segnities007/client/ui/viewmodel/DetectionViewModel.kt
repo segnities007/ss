@@ -1,6 +1,7 @@
 package com.segnities007.client.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.segnities007.client.model.Detection
 import com.segnities007.client.network.DetectionApiService
@@ -51,5 +52,17 @@ class DetectionViewModel(
 
     fun clearError() {
         _errorMessage.value = null
+    }
+
+    class Factory(
+        private val apiService: DetectionApiService,
+    ) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(DetectionViewModel::class.java)) {
+                return DetectionViewModel(apiService) as T
+            }
+            throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
+        }
     }
 }
