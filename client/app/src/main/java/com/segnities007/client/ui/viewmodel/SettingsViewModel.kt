@@ -1,8 +1,11 @@
 package com.segnities007.client.ui.viewmodel
 
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.segnities007.client.R
 import com.segnities007.client.model.IoTControlStatus
 import com.segnities007.client.model.IoTDeviceSettings
 import com.segnities007.client.model.UpdateIoTControlRequest
@@ -14,9 +17,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-class DashboardViewModel(
+class SettingsViewModel(
+    application: Application,
     private val apiService: IoTControlApiService,
-) : ViewModel() {
+) : AndroidViewModel(application) {
 
     private val _status = MutableStateFlow<IoTControlStatus?>(null)
     val status: StateFlow<IoTControlStatus?> = _status.asStateFlow()
@@ -59,10 +63,14 @@ class DashboardViewModel(
                     _status.value = response.body()
                         ?: throw IllegalStateException("Server response is empty")
                 } else {
-                    _errorMessage.value = "監視状態を変更できませんでした: ${response.code()}"
+                    _errorMessage.value = getApplication<Application>().getString(
+                        R.string.failed_to_change_monitoring_with_code,
+                        response.code(),
+                    )
                 }
             } catch (error: Exception) {
-                _errorMessage.value = error.message ?: "監視状態を変更できませんでした"
+                _errorMessage.value = error.message
+                    ?: getApplication<Application>().getString(R.string.failed_to_change_monitoring)
             } finally {
                 _isUpdating.value = false
             }
@@ -100,10 +108,16 @@ class DashboardViewModel(
                     _status.value = response.body()
                         ?: throw IllegalStateException("Server response is empty")
                 } else {
-                    _errorMessage.value = "デバイス設定を変更できませんでした: ${response.code()}"
+                    _errorMessage.value = getApplication<Application>().getString(
+                        R.string.failed_to_change_device_settings_with_code,
+                        response.code(),
+                    )
                 }
             } catch (error: Exception) {
-                _errorMessage.value = error.message ?: "デバイス設定を変更できませんでした"
+                _errorMessage.value = error.message
+                    ?: getApplication<Application>().getString(
+                        R.string.failed_to_change_device_settings,
+                    )
             } finally {
                 _isUpdating.value = false
             }
@@ -118,22 +132,27 @@ class DashboardViewModel(
                 _status.value = response.body()
                     ?: throw IllegalStateException("Server response is empty")
             } else {
-                _errorMessage.value = "IoT状態を取得できませんでした: ${response.code()}"
+                _errorMessage.value = getApplication<Application>().getString(
+                    R.string.failed_to_get_iot_status_with_code,
+                    response.code(),
+                )
             }
         } catch (error: Exception) {
-            _errorMessage.value = error.message ?: "IoT状態を取得できませんでした"
+            _errorMessage.value = error.message
+                ?: getApplication<Application>().getString(R.string.failed_to_get_iot_status)
         } finally {
             if (showLoading) _isLoading.value = false
         }
     }
 
     class Factory(
+        private val application: Application,
         private val apiService: IoTControlApiService,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(DashboardViewModel::class.java)) {
-                return DashboardViewModel(apiService) as T
+            if (modelClass.isAssignableFrom(SettingsViewModel::class.java)) {
+                return SettingsViewModel(application, apiService) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }

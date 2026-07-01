@@ -7,7 +7,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.v1.core.*
-import org.jetbrains.exposed.v1.core.dao.id.UIntIdTable
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.SchemaUtils
 import org.jetbrains.exposed.v1.jdbc.insert
@@ -16,21 +15,12 @@ import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 class DetectionService(val database: Database) {
 
-    object Detections : UIntIdTable() {
-        val type = varchar("type", length = 32)
-        val detectedAt = varchar("detected_at", length = 64)
-        val confidence = double("confidence").nullable()
-        val imagePath = varchar("image_path", length = 512)
-        val metadata = text("metadata").nullable()
-        val createdAt = varchar("created_at", length = 64)
-    }
-
     private val json = Json { ignoreUnknownKeys = true }
 
     suspend fun createSchema() {
         withContext(Dispatchers.IO) {
             transaction(database) {
-                SchemaUtils.create(Detections)
+                SchemaUtils.create(DetectionsTable)
             }
         }
     }
@@ -46,23 +36,23 @@ class DetectionService(val database: Database) {
         val createdAt = java.time.Instant.now().toString()
         return withContext(Dispatchers.IO) {
             transaction(database) {
-                val newRecord = Detections.insert {
-                    it[Detections.type] = type
-                    it[Detections.detectedAt] = detectedAt
-                    it[Detections.confidence] = confidence
-                    it[Detections.imagePath] = imagePath
-                    it[Detections.metadata] = metadataJson
-                    it[Detections.createdAt] = createdAt
+                val newRecord = DetectionsTable.insert {
+                    it[DetectionsTable.type] = type
+                    it[DetectionsTable.detectedAt] = detectedAt
+                    it[DetectionsTable.confidence] = confidence
+                    it[DetectionsTable.imagePath] = imagePath
+                    it[DetectionsTable.metadata] = metadataJson
+                    it[DetectionsTable.createdAt] = createdAt
                 }
-                val id = newRecord[Detections.id].value
+                val id = newRecord[DetectionsTable.id].value
                 Detection(
                     id = id,
-                    type = newRecord[Detections.type],
-                    detectedAt = newRecord[Detections.detectedAt],
-                    confidence = newRecord[Detections.confidence],
+                    type = newRecord[DetectionsTable.type],
+                    detectedAt = newRecord[DetectionsTable.detectedAt],
+                    confidence = newRecord[DetectionsTable.confidence],
                     imageUrl = "/api/detections/$id/image",
                     metadata = metadataJson?.let { json.decodeFromString(it) },
-                    createdAt = newRecord[Detections.createdAt],
+                    createdAt = newRecord[DetectionsTable.createdAt],
                 )
             }
         }
@@ -71,15 +61,15 @@ class DetectionService(val database: Database) {
     suspend fun list(type: String? = null, limit: Int = 50): List<Detection> {
         return withContext(Dispatchers.IO) {
             transaction(database) {
-                Detections.selectAll()
+                DetectionsTable.selectAll()
                     .let { query ->
                         if (type != null) {
-                            query.where { Detections.type eq type }
+                            query.where { DetectionsTable.type eq type }
                         } else {
                             query
                         }
                     }
-                    .orderBy(Detections.detectedAt, SortOrder.DESC)
+                    .orderBy(DetectionsTable.detectedAt, SortOrder.DESC)
                     .limit(limit)
                     .map { rowToDetection(it) }
             }
@@ -89,25 +79,25 @@ class DetectionService(val database: Database) {
     suspend fun getImagePath(id: UInt): String? {
         return withContext(Dispatchers.IO) {
             transaction(database) {
-                Detections.selectAll()
-                    .where { Detections.id eq id }
-                    .map { it[Detections.imagePath] }
+                DetectionsTable.selectAll()
+                    .where { DetectionsTable.id eq id }
+                    .map { it[DetectionsTable.imagePath] }
                     .singleOrNull()
             }
         }
     }
 
     private fun rowToDetection(row: ResultRow): Detection {
-        val id = row[Detections.id].value
-        val metadataJson = row[Detections.metadata]
+        val id = row[DetectionsTable.id].value
+        val metadataJson = row[DetectionsTable.metadata]
         return Detection(
             id = id,
-            type = row[Detections.type],
-            detectedAt = row[Detections.detectedAt],
-            confidence = row[Detections.confidence],
+            type = row[DetectionsTable.type],
+            detectedAt = row[DetectionsTable.detectedAt],
+            confidence = row[DetectionsTable.confidence],
             imageUrl = "/api/detections/$id/image",
             metadata = metadataJson?.let { json.decodeFromString(it) },
-            createdAt = row[Detections.createdAt],
+            createdAt = row[DetectionsTable.createdAt],
         )
     }
 }

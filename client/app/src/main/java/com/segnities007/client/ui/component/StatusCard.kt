@@ -11,12 +11,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.segnities007.client.R
 import com.segnities007.client.model.IoTControlStatus
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.time.Instant
+import com.segnities007.client.model.IoTDeviceSettings
+import com.segnities007.client.ui.util.formatLastSeen
 
 @Composable
 fun StatusCard(status: IoTControlStatus) {
@@ -40,33 +42,55 @@ fun StatusCard(status: IoTControlStatus) {
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Text(
-                text = "Raspberry Pi",
+                text = stringResource(R.string.raspberry_pi),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
             Spacer(Modifier.height(12.dp))
-            StatusRow("接続", if (status.deviceOnline) "オンライン" else "オフライン")
             StatusRow(
-                "監視状態",
-                when {
-                    !status.deviceOnline -> "確認できません"
-                    status.monitoringActive -> "監視中"
-                    else -> "停止中"
+                label = stringResource(R.string.connection),
+                value = if (status.deviceOnline) {
+                    stringResource(R.string.online)
+                } else {
+                    stringResource(R.string.offline)
                 },
             )
-            StatusRow("最終通信", formatLastSeen(status.lastSeenAt))
+            StatusRow(
+                label = stringResource(R.string.last_communication),
+                value = formatLastSeen(status.lastSeenAt),
+            )
         }
     }
 }
 
-private fun formatLastSeen(value: String?): String {
-    if (value == null) return "未接続"
-    return runCatching {
-        LAST_SEEN_FORMATTER
-            .format(Instant.parse(value)
-                .atZone(ZoneId.systemDefault()))
-    }.getOrDefault(value)
+@Preview(showBackground = true)
+@Composable
+private fun StatusCardOnlinePreview() {
+    MaterialTheme {
+        StatusCard(
+            status = IoTControlStatus(
+                deviceOnline = true,
+                monitoringEnabled = true,
+                monitoringActive = true,
+                settings = IoTDeviceSettings(),
+                lastSeenAt = "2026-07-01T12:00:00Z",
+            ),
+        )
+    }
 }
 
-private val LAST_SEEN_FORMATTER: DateTimeFormatter =
-    DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")
+@Preview(showBackground = true)
+@Composable
+private fun StatusCardOfflinePreview() {
+    MaterialTheme {
+        StatusCard(
+            status = IoTControlStatus(
+                deviceOnline = false,
+                monitoringEnabled = true,
+                monitoringActive = false,
+                settings = IoTDeviceSettings(),
+                lastSeenAt = null,
+            ),
+        )
+    }
+}

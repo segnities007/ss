@@ -19,10 +19,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.segnities007.client.R
 import com.segnities007.client.model.Detection
+import com.segnities007.client.model.DetectionMetadata
+import com.segnities007.client.ui.util.labelForType
+import com.segnities007.client.ui.util.formatTimestamp
+import com.segnities007.client.ui.util.resolveImageUrl
+import com.segnities007.client.ui.util.trackingIdPrefix
 
 @Composable
 fun DetectionListItem(
@@ -31,23 +40,18 @@ fun DetectionListItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val imageUrl = if (detection.imageUrl.startsWith("http")) {
-        detection.imageUrl
-    } else {
-        baseUrl.removeSuffix("/") + detection.imageUrl
-    }
+    val imageUrl = resolveImageUrl(detection.imageUrl, baseUrl)
 
     Card(
         onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 4.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+                .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             AsyncImage(
@@ -55,32 +59,31 @@ fun DetectionListItem(
                     .data(imageUrl)
                     .crossfade(true)
                     .build(),
-                contentDescription = "Detection image",
+                contentDescription = stringResource(R.string.detection_image),
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.size(80.dp),
             )
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            Column(modifier = Modifier.weight(1f)) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(vertical = 2.dp),
+            ) {
                 Text(
                     text = labelForType(detection.type),
                     style = MaterialTheme.typography.titleMedium,
                 )
                 Text(
-                    text = detection.detectedAt,
+                    text = formatTimestamp(detection.detectedAt),
                     style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
-                detection.confidence?.let {
-                    Text(
-                        text = "Confidence: ${(it * 100).toInt()}%",
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                }
                 detection.metadata?.trackId?.let { trackId ->
-                    val prefix = if (detection.type == "person") "P" else "V"
                     Text(
-                        text = "Tracking ID: $prefix-$trackId",
+                        text = "${stringResource(R.string.tracking_id)}: ${trackingIdPrefix(detection.type)}-$trackId",
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
@@ -88,16 +91,28 @@ fun DetectionListItem(
 
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = "詳細を表示",
+                contentDescription = stringResource(R.string.show_detail),
             )
+            Spacer(modifier = Modifier.width(8.dp))
         }
     }
 }
 
-private fun labelForType(type: String): String {
-    return when (type) {
-        "person" -> "不審者"
-        "suspicious_vehicle" -> "不審車両"
-        else -> type
+@Preview(showBackground = true)
+@Composable
+private fun DetectionListItemPreview() {
+    MaterialTheme {
+        DetectionListItem(
+            detection = Detection(
+                id = 1u,
+                type = "person",
+                detectedAt = "2026/07/01 12:00:00",
+                confidence = 0.875,
+                imageUrl = "",
+                metadata = DetectionMetadata(trackId = 42),
+            ),
+            baseUrl = "http://localhost:8080",
+            onClick = {},
+        )
     }
 }

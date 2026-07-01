@@ -8,8 +8,8 @@ import androidx.lifecycle.ViewModelProvider
 import com.segnities007.client.network.RetrofitInstance
 import com.segnities007.client.ui.ClientApp
 import com.segnities007.client.ui.theme.ClientTheme
-import com.segnities007.client.ui.viewmodel.DashboardViewModel
 import com.segnities007.client.ui.viewmodel.DetectionViewModel
+import com.segnities007.client.ui.viewmodel.SettingsViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -17,18 +17,18 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         val detectionViewModel = ViewModelProvider(
             this,
-            DetectionViewModel.Factory(RetrofitInstance.api),
+            DetectionViewModel.Factory(application, RetrofitInstance.api),
         )[DetectionViewModel::class.java]
-        val dashboardViewModel = ViewModelProvider(
+        val settingsViewModel = ViewModelProvider(
             this,
-            DashboardViewModel.Factory(RetrofitInstance.iotControlApi),
-        )[DashboardViewModel::class.java]
+            SettingsViewModel.Factory(application, RetrofitInstance.iotControlApi),
+        )[SettingsViewModel::class.java]
 
         setContent {
             ClientTheme {
                 ClientApp(
                     detectionViewModel = detectionViewModel,
-                    dashboardViewModel = dashboardViewModel,
+                    settingsViewModel = settingsViewModel,
                     baseUrl = RetrofitInstance.BASE_URL,
                 )
             }

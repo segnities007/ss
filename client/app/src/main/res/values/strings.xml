@@ -1,3 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">client</string>
+
+    <!-- Navigation -->
+    <string name="nav_history">履歴</string>
+    <string name="nav_settings">設定</string>
+
+    <!-- Common -->
+    <string name="refresh">更新</string>
+    <string name="no_record">記録なし</string>
+    <string name="online">オンライン</string>
+    <string name="offline">オフライン</string>
+
+    <!-- Settings -->
+    <string name="settings_title">設定</string>
+    <string name="iot_status_unavailable">IoT状態を取得できません</string>
+    <string name="monitoring_control">監視制御</string>
+    <string name="monitoring_active">監視中</string>
+    <string name="monitoring_inactive">停止中</string>
+    <string name="waiting_for_pi_reflection">Raspberry Piへの反映を待っています</string>
+    <string name="device_settings">デバイス設定</string>
+    <string name="buzzer">ブザー</string>
+    <string name="usb_camera">USB camera</string>
+    <string name="pir_sensor">PIR motion sensor</string>
+    <string name="raspberry_pi">Raspberry Pi</string>
+    <string name="connection">接続</string>
+    <string name="monitoring_status">監視状態</string>
+    <string name="cannot_confirm">確認できません</string>
+    <string name="last_communication">最終通信</string>
+    <string name="not_connected">未接続</string>
+
+    <!-- Detection List -->
+    <string name="detection_history">検知履歴</string>
+    <string name="no_detection_history">検知履歴がありません</string>
+
+    <!-- Detection Detail -->
+    <string name="detection_detail_title">検知詳細</string>
+    <string name="back_to_history">検知履歴へ戻る</string>
+    <string name="type_person">不審者</string>
+    <string name="type_suspicious_vehicle">不審車両</string>
+    <string name="description_person">人物が設定時間以上継続して検知されました。</string>
+    <string name="description_vehicle">車両が同じ位置に設定時間以上留まっていると判定されました。</string>
+    <string name="description_default">監視システムによって検知された記録です。</string>
+    <string name="judgment_info">判定情報</string>
+    <string name="detection_datetime">検知日時</string>
+    <string name="confidence">信頼度</string>
+    <string name="tracking_id">Tracking ID</string>
+    <string name="duration">継続時間</string>
+    <string name="seconds_unit">秒</string>
+    <string name="detection_location">検出位置</string>
+    <string name="detection_box">検出枠</string>
+    <string name="reference_position">基準位置</string>
+    <string name="record_info">記録情報</string>
+    <string name="record_id">記録ID</string>
+    <string name="saved_datetime">保存日時</string>
+    <string name="detection_image">検知画像</string>
+    <string name="show_detail">詳細を表示</string>
+
+    <!-- Detection List Item -->
+    <string name="confidence_format">%.1f%%</string>
+    <string name="confidence_list_format">Confidence: %d%%</string>
+
+    <!-- Error Messages -->
+    <string name="failed_to_change_monitoring">監視状態を変更できませんでした</string>
+    <string name="failed_to_change_monitoring_with_code">監視状態を変更できませんでした: %d</string>
+    <string name="failed_to_change_device_settings">デバイス設定を変更できませんでした</string>
+    <string name="failed_to_change_device_settings_with_code">デバイス設定を変更できませんでした: %d</string>
+    <string name="failed_to_get_iot_status">IoT状態を取得できませんでした</string>
+    <string name="failed_to_get_iot_status_with_code">IoT状態を取得できませんでした: %d</string>
+    <string name="failed_to_load_with_code">Failed to load: %d</string>
+    <string name="unknown_error">Unknown error</string>
 </resources>

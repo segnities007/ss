@@ -1,18 +1,13 @@
 package com.segnities007.routing
 
-import com.segnities007.model.DetectionMetadata
 import com.segnities007.service.DetectionService
 import com.segnities007.service.FileStorage
 import io.ktor.http.ContentDisposition
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.content.PartData
-import io.ktor.http.content.forEachPart
-import io.ktor.http.content.streamProvider
 import io.ktor.server.application.Application
 import io.ktor.server.application.call
-import io.ktor.server.request.receiveMultipart
 import io.ktor.server.response.header
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondBytes
@@ -20,14 +15,11 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
-import kotlinx.serialization.json.Json
 
 fun Application.detectionRouting(
     detectionService: DetectionService,
     fileStorage: FileStorage,
 ) {
-    val json = Json { ignoreUnknownKeys = true }
-
     routing {
         route("/api") {
 
@@ -36,51 +28,20 @@ fun Application.detectionRouting(
             }
 
             post("/detections") {
-                val multipart = call.receiveMultipart()
+                val data = call.parseDetectionMultipart()
 
-                var type: String? = null
-                var detectedAt: String? = null
-                var confidence: Double? = null
-                var metadata: DetectionMetadata? = null
-                var imageBytes: ByteArray? = null
-                var imageExtension: String = "jpg"
-
-                multipart.forEachPart { part ->
-                    when (part) {
-                        is PartData.FormItem -> {
-                            when (part.name) {
-                                "type" -> type = part.value
-                                "detectedAt" -> detectedAt = part.value
-                                "confidence" -> confidence = part.value.toDoubleOrNull()
-                                "metadata" -> metadata = json.decodeFromString<DetectionMetadata>(part.value)
-                            }
-                        }
-                        is PartData.FileItem -> {
-                            if (part.name == "image") {
-                                imageBytes = part.streamProvider().readBytes()
-                                imageExtension = part.originalFileName
-                                    ?.substringAfterLast('.', "jpg")
-                                    ?.lowercase()
-                                    ?: "jpg"
-                            }
-                        }
-                        else -> {}
-                    }
-                    part.dispose()
-                }
-
-                if (type == null || detectedAt == null || imageBytes == null) {
+                if (data.type == null || data.detectedAt == null || data.imageBytes == null) {
                     call.respond(HttpStatusCode.BadRequest, "Missing required fields: type, detectedAt, image")
                     return@post
                 }
 
-                val imagePath = fileStorage.save(imageBytes!!, imageExtension)
+                val imagePath = fileStorage.save(data.imageBytes, data.imageExtension)
                 val detection = detectionService.create(
-                    type = type!!,
-                    detectedAt = detectedAt!!,
-                    confidence = confidence,
+                    type = data.type,
+                    detectedAt = data.detectedAt,
+                    confidence = data.confidence,
                     imagePath = imagePath,
-                    metadata = metadata,
+                    metadata = data.metadata,
                 )
 
                 call.respond(HttpStatusCode.Created, detection)
