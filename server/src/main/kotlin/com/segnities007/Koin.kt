@@ -2,6 +2,7 @@ package com.segnities007
 
 import com.segnities007.service.DetectionService
 import com.segnities007.service.FileStorage
+import com.segnities007.service.IoTControlService
 import io.ktor.server.application.*
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.koin.dsl.module
@@ -27,6 +28,7 @@ fun Application.configureKoin() {
 
             single { FileStorage() }
             single { DetectionService(get()) }
+            single { IoTControlService() }
         })
     }
 }

@@ -1,8 +1,10 @@
 package com.segnities007
 
 import com.segnities007.routing.detectionRouting
+import com.segnities007.routing.iotControlRouting
 import com.segnities007.service.DetectionService
 import com.segnities007.service.FileStorage
+import com.segnities007.service.IoTControlService
 import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -11,6 +13,7 @@ import org.koin.ktor.ext.inject
 fun Application.configureRouting() {
     val detectionService: DetectionService by inject()
     val fileStorage: FileStorage by inject()
+    val iotControlService: IoTControlService by inject()
 
     routing {
         get("/") {
@@ -22,4 +25,5 @@ fun Application.configureRouting() {
     }
 
     detectionRouting(detectionService, fileStorage)
+    iotControlRouting(iotControlService)
 }

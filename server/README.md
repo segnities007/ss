@@ -12,6 +12,19 @@ Here are some useful links to get you started:
 
 Detection metadata is stored in a local SQLite database. Detection images are stored in the local `uploads/` directory.
 
+The server also relays monitoring control between the Mobile Application and Raspberry Pi.
+
+## IoT Control API
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `GET` | `/api/iot/control` | Read requested and actual monitoring status |
+| `PUT` | `/api/iot/control` | Start or stop monitoring from the Mobile Application |
+| `PUT` | `/api/iot/settings` | Enable or disable the buzzer, camera, and PIR sensor |
+| `POST` | `/api/iot/heartbeat` | Receive Raspberry Pi status and return requested control state |
+
+The Raspberry Pi is considered offline when no heartbeat is received for 15 seconds. The requested state is held in memory and defaults to monitoring enabled when the server starts.
+
 Here's a list of features included in this project:
 
 | Name                                                                                  | Description                                                                        |
